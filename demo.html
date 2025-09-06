@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>年会抽奖系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 大屏幕显示区域 */
+        .big-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            position: relative;
+        }
+
+        .title {
+            font-size: 48px;
+            margin-bottom: 50px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .qr-section {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .qr-code {
+            width: 150px;
+            height: 150px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .lottery-area {
+            text-align: center;
+        }
+
+        .participants-display {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .participant {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .participant:hover {
+            transform: scale(1.05);
+            background: rgba(255,255,255,0.3);
+        }
+
+        .lottery-button {
+            font-size: 24px;
+            padding: 20px 60px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .lottery-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .lottery-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .winner-display {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            display: none;
+            z-index: 1000;
+        }
+
+        .winner-name {
+            font-size: 48px;
+            color: #ffd700;
+            margin-bottom: 20px;
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #ffd700; }
+            to { text-shadow: 0 0 20px #ffd700, 0 0 30px #ffd700; }
+        }
+
+        /* 手机参与页面 */
+        .mobile-view {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            z-index: 2000;
+        }
+
+        .mobile-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .mobile-title {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+
+        .name-input {
+            width: 80%;
+            padding: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 25px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .join-button {
+            font-size: 20px;
+            padding: 15px 40px;
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .join-button:hover {
+            transform: scale(1.05);
+        }
+
+        .success-message {
+            display: none;
+            font-size: 24px;
+            color: #00ff00;
+            margin-top: 20px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .big-screen {
+                display: none;
+            }
+            
+            .mobile-view {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 大屏幕显示 -->
+    <div class="container">
+        <div class="big-screen">
+            <h1 class="title">🎉 年会抽奖系统 🎉</h1>
+            
+            <div class="qr-section">
+                <div class="qr-code" id="qrCode">
+                    <!-- QR码将在这里生成 -->
+                </div>
+                <p style="margin-top: 10px; font-size: 14px;">扫码参与抽奖</p>
+            </div>
+
+            <div class="lottery-area">
+                <div class="participants-display" id="participantsDisplay">
+                    <!-- 参与者列表将在这里显示 -->
+                </div>
+                
+                <div style="margin-top: 30px;">
+                    <p style="font-size: 20px; margin-bottom: 20px;">
+                        当前参与人数：<span id="participantCount">0</span>
+                    </p>
+                    <button class="lottery-button" id="lotteryBtn" onclick="startLottery()">
+                        开始抽奖
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 中奖者展示 -->
+    <div class="winner-display" id="winnerDisplay">
+        <h2 style="font-size: 32px; margin-bottom: 20px;">🎊 恭喜中奖 🎊</h2>
+        <div class="winner-name" id="winnerName"></div>
+        <button class="lottery-button" onclick="closeWinner()">确定</button>
+    </div>
+
+    <!-- 手机参与页面 -->
+    <div class="mobile-view" id="mobileView">
+        <div class="mobile-content">
+            <h2 class="mobile-title">🎁 参与抽奖 🎁</h2>
+            <input type="text" class="name-input" id="participantName" placeholder="请输入您的姓名" maxlength="10">
+            <button class="join-button" onclick="joinLottery()">参与抽奖</button>
+            <div class="success-message" id="successMessage">
+                ✨ 参与成功！请等待抽奖结果 ✨
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入QR码生成库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <script>
+        // 参与者列表
+        let participants = [];
+        let isDrawing = false;
+
+        // 初始化QR码
+        function initQRCode() {
+            const currentUrl = window.location.href;
+            new QRCode(document.getElementById("qrCode"), {
+                text: currentUrl,
+                width: 130,
+                height: 130,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        // 检查是否是手机访问
+        function checkMobile() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                document.getElementById('mobileView').style.display = 'block';
+            }
+        }
+
+        // 参与抽奖
+        function joinLottery() {
+            const name = document.getElementById('participantName').value.trim();
+            
+            if (!name) {
+                alert('请输入您的姓名！');
+                return;
+            }
+
+            if (participants.includes(name)) {
+                alert('您已经参与过了！');
+                return;
+            }
+
+            participants.push(name);
+            updateParticipantsDisplay();
+            
+            // 显示成功消息
+            document.getElementById('participantName').style.display = 'none';
+            document.querySelector('.join-button').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'block';
+
+            // 3秒后重置表单
+            setTimeout(() => {
+                document.getElementById('participantName').value = '';
+                document.getElementById('participantName').style.display = 'block';
+                document.querySelector('.join-button').style.display = 'block';
+                document.getElementById('successMessage').style.display = 'none';
+            }, 3000);
+        }
+
+        // 更新参与者显示
+        function updateParticipantsDisplay() {
+            const display = document.getElementById('participantsDisplay');
+            const count = document.getElementById('participantCount');
+            
+            count.textContent = participants.length;
+            
+            display.innerHTML = participants.map(name => 
+                `<div class="participant">${name}</div>`
+            ).join('');
+        }
+
+        // 开始抽奖
+        function startLottery() {
+            if (isDrawing || participants.length === 0) {
+                if (participants.length === 0) {
+                    alert('还没有人参与抽奖！');
+                }
+                return;
+            }
+
+            isDrawing = true;
+            const btn = document.getElementById('lotteryBtn');
+            btn.disabled = true;
+            btn.textContent = '抽奖中...';
+
+            // 创建抽奖动画
+            let animationCount = 0;
+            const maxAnimations = 30;
+            const participantsDisplay = document.getElementById('participantsDisplay');
+            
+            const animation = setInterval(() => {
+                // 随机高亮参与者
+                const randomIndex = Math.floor(Math.random() * participants.length);
+                const allParticipants = participantsDisplay.querySelectorAll('.participant');
+                
+                allParticipants.forEach(p => p.style.background = 'rgba(255,255,255,0.2)');
+                allParticipants[randomIndex].style.background = 'rgba(255,215,0,0.5)';
+                
+                animationCount++;
+                
+                if (animationCount >= maxAnimations) {
+                    clearInterval(animation);
+                    
+                    // 最终中奖者
+                    const winnerIndex = Math.floor(Math.random() * participants.length);
+                    const winner = participants[winnerIndex];
+                    
+                    // 高亮中奖者
+                    allParticipants.forEach(p => p.style.background = 'rgba(255,255,255,0.2)');
+                    allParticipants[winnerIndex].style.background = 'rgba(255,215,0,0.8)';
+                    
+                    // 显示中奖者
+                    setTimeout(() => {
+                        showWinner(winner);
+                        participants.splice(winnerIndex, 1); // 移除中奖者
+                        updateParticipantsDisplay();
+                        btn.disabled = false;
+                        btn.textContent = '开始抽奖';
+                        isDrawing = false;
+                    }, 1000);
+                }
+            }, 100);
+        }
+
+        // 显示中奖者
+        function showWinner(name) {
+            document.getElementById('winnerName').textContent = name;
+            document.getElementById('winnerDisplay').style.display = 'block';
+        }
+
+        // 关闭中奖者显示
+        function closeWinner() {
+            document.getElementById('winnerDisplay').style.display = 'none';
+        }
+
+        // 监听Enter键
+        document.getElementById('participantName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                joinLottery();
+            }
+        });
+
+        // 页面加载完成后初始化
+        window.onload = function() {
+            initQRCode();
+            checkMobile();
+        };
+    </script>
+</body>
+</html>
