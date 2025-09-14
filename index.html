@@ -114,13 +114,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        .participant img {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        
         .winner-display {
             text-align: center;
             padding: 30px;
@@ -206,7 +199,7 @@
         }
         
         .btn-start {
-            background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+            background: linear-gradient(135deg, #00b09b 0%, #96c93ed 100%);
         }
         
         .btn-stop {
@@ -388,6 +381,13 @@
             font-size: 1.2rem;
         }
         
+        .error-message {
+            color: #ff4757;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            display: none;
+        }
+        
         .hidden {
             display: none;
         }
@@ -397,7 +397,7 @@
     <!-- 抽奖控制页面 -->
     <div id="lotteryPage" class="container">
         <header>
-            <h1>胡先生 & 王小姐的婚礼抽奖</h1>
+            <h1>张先生 & 李小姐的婚礼抽奖</h1>
             <p class="subtitle">感谢各位来宾的光临，祝您中奖！</p>
         </header>
         
@@ -435,7 +435,7 @@
                     </div>
                     <div class="prize">
                         <h3>幸运奖</h3>
-                        <p>红包100元</p>
+                        <p>红包200元</p>
                     </div>
                 </div>
             </div>
@@ -465,6 +465,7 @@
                         <input type="text" id="participantName" placeholder="输入姓名手动添加">
                         <button onclick="addParticipantManually()">添加</button>
                     </div>
+                    <div id="nameError" class="error-message">该姓名已存在！</div>
                     <button onclick="clearAllParticipants()" style="background: #ff4756;">
                         <i class="fas fa-trash"></i> 清空参与者
                     </button>
@@ -494,7 +495,8 @@
         <div id="registrationForm">
             <div class="form-group">
                 <label for="name">您的姓名</label>
-                <input type="text" id="name" placeholder="请输入您的姓名" required>
+                <input type="text" id="name" placeholder="请输入您的姓名" required oninput="hideError()">
+                <div id="regNameError" class="error-message">该姓名已参与抽奖！</div>
             </div>
             <div class="form-group">
                 <label for="phone">手机号码</label>
@@ -544,6 +546,8 @@
         const registrationPage = document.getElementById('registrationPage');
         const registrationForm = document.getElementById('registrationForm');
         const successMessage = document.getElementById('successMessage');
+        const nameError = document.getElementById('nameError');
+        const regNameError = document.getElementById('regNameError');
         
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -568,6 +572,12 @@
             btnReset.addEventListener('click', resetLottery);
         });
         
+        // 隐藏错误信息
+        function hideError() {
+            nameError.style.display = 'none';
+            regNameError.style.display = 'none';
+        }
+        
         // 显示注册页面
         function showRegistrationPage() {
             lotteryPage.classList.add('hidden');
@@ -580,10 +590,10 @@
             lotteryPage.classList.remove('hidden');
         }
         
-        // 生成二维码
+        // 生成二维码 - 指向指定网址
         function generateQRCode() {
-            // 生成参与链接 - 指向注册页面
-            const participationUrl = `${window.location.origin}${window.location.pathname}?page=register`;
+            // 设置二维码链接到指定网址
+            const participationUrl = "https://wq321.github.io/lucky-draw/";
             
             QRCode.toCanvas(document.getElementById('qrcodeCanvas'), participationUrl, {
                 width: 200,
@@ -597,6 +607,11 @@
             });
         }
         
+        // 检查姓名是否已存在
+        function isNameExists(name) {
+            return participants.some(p => p.name === name);
+        }
+        
         // 注册参与者
         function registerParticipant() {
             const name = document.getElementById('name').value.trim();
@@ -608,22 +623,17 @@
                 return;
             }
             
-            // 检查是否已存在
-            const exists = participants.some(p => p.phone === phone);
-            if (exists) {
-                alert('该手机号码已参与抽奖！');
+            // 检查姓名是否已存在
+            if (isNameExists(name)) {
+                regNameError.style.display = 'block';
                 return;
             }
-            
-            // 生成随机头像
-            const avatar = `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'men' : 'women'}/${Math.floor(Math.random() * 50)}.jpg`;
             
             const participant = {
                 id: Date.now(),
                 name: name,
                 phone: phone,
                 blessing: blessing,
-                avatar: avatar,
                 timestamp: new Date().toLocaleString()
             };
             
@@ -646,14 +656,18 @@
             const name = nameInput.value.trim();
             
             if (name) {
+                // 检查姓名是否已存在
+                if (isNameExists(name)) {
+                    nameError.style.display = 'block';
+                    return;
+                }
+                
                 // 生成随机手机号
                 const phone = '1' + Math.floor(1000000000 + Math.random() * 9000000000);
                 
                 if (addParticipant(name, phone)) {
                     nameInput.value = '';
                     alert(`已添加: ${name}`);
-                } else {
-                    alert(`${name} 已存在!`);
                 }
             }
         }
@@ -661,19 +675,14 @@
         // 添加参与者
         function addParticipant(name, phone = '') {
             // 检查是否已存在
-            const exists = participants.some(p => p.name === name && p.phone === phone);
-            if (exists) {
+            if (isNameExists(name)) {
                 return false;
             }
-            
-            // 生成随机头像
-            const avatar = `https://randomuser.me/api/portraits/${Math.random() > 0.5 ? 'men' : 'women'}/${Math.floor(Math.random() * 50)}.jpg`;
             
             const participant = {
                 id: Date.now(),
                 name: name,
                 phone: phone,
-                avatar: avatar,
                 timestamp: new Date().toLocaleString()
             };
             
@@ -690,6 +699,7 @@
                 participants = [];
                 saveParticipants();
                 updateParticipantsDisplay();
+                nameError.style.display = 'none';
             }
         }
         
@@ -711,10 +721,7 @@
             participants.forEach(participant => {
                 const participantEl = document.createElement('div');
                 participantEl.className = 'participant';
-                participantEl.innerHTML = `
-                    <img src="${participant.avatar}" alt="${participant.name}">
-                    <span>${participant.name}</span>
-                `;
+                participantEl.innerHTML = `<span>${participant.name}</span>`;
                 participantsList.appendChild(participantEl);
             });
         }
