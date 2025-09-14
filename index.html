@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
     <style>
+        /* 保持原有样式不变 */
         * {
             margin: 0;
             padding: 0;
@@ -282,6 +283,36 @@
             border-radius: 5px;
         }
         
+        /* 批量添加区域样式 */
+        .batch-add {
+            margin: 15px 0;
+            padding: 10px 0;
+            border-top: 1px dashed #eee;
+        }
+        
+        .batch-add label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #6a11cb;
+        }
+        
+        .batch-add textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+            font-size: 0.95rem;
+        }
+        
+        #batchResult {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #00b09b;
+            display: none;
+        }
+        
         @media (max-width: 768px) {
             .content {
                 flex-direction: column;
@@ -445,6 +476,10 @@
                     <h3><i class="fas fa-qrcode"></i> 扫码参与</h3>
                     <canvas id="qrcodeCanvas"></canvas>
                     <p>微信扫描二维码参与抽奖</p>
+                    <!-- 新增：显示注册页面链接，方便测试 -->
+                    <p style="font-size:0.8rem; color:#6a11cb; margin-top:10px;">
+                        注册链接: <span id="registerUrl" style="word-break:break-all;"></span>
+                    </p>
                 </div>
                 
                 <div class="control-buttons">
@@ -465,6 +500,31 @@
                         <input type="text" id="participantName" placeholder="输入姓名手动添加">
                         <button onclick="addParticipantManually()">添加</button>
                     </div>
+                    
+                    <!-- 批量添加区域 -->
+                    <div class="batch-add">
+                        <label>
+                            <i class="fas fa-list"></i> 批量添加（每行1个姓名）
+                        </label>
+                        <textarea 
+                            id="batchNames" 
+                            rows="6" 
+                            placeholder="示例：
+张三
+李四
+王五
+赵六
+（粘贴姓名后点击下方按钮导入）"
+                        ></textarea>
+                        <button 
+                            onclick="addBatchParticipants()" 
+                            style="margin-top: 10px; background: linear-gradient(135deg, #2ed573 0%, #00d2d3 100%);"
+                        >
+                            <i class="fas fa-upload"></i> 批量导入选中姓名
+                        </button>
+                        <div id="batchResult"></div>
+                    </div>
+                    
                     <div id="nameError" class="error-message">该姓名已存在！</div>
                     <button onclick="clearAllParticipants()" style="background: #ff4756;">
                         <i class="fas fa-trash"></i> 清空参与者
@@ -548,6 +608,7 @@
         const successMessage = document.getElementById('successMessage');
         const nameError = document.getElementById('nameError');
         const regNameError = document.getElementById('regNameError');
+        const registerUrlElement = document.getElementById('registerUrl');
         
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -589,13 +650,21 @@
             registrationPage.classList.add('hidden');
             lotteryPage.classList.remove('hidden');
         }
-        
-        // 生成二维码 - 指向指定网址
+          
+        // 生成二维码 - 修复版：确保正确指向注册页面
         function generateQRCode() {
-            // 设置二维码链接到指定网址
-            const participationUrl = "https://wq321.github.io/lucky-draw/";
+            // 获取当前页面基础URL（不含参数）
+            //let baseUrl = window.location.href.split('?')[0];
+          let baseUrl = "https://wq321.github.io/lucky-draw/";
             
-            QRCode.toCanvas(document.getElementById('qrcodeCanvas'), participationUrl, {
+            // 构建注册页面URL
+            const registrationUrl = baseUrl + '?page=register';
+            
+            // 显示注册链接（方便测试）
+            registerUrlElement.textContent = registrationUrl;
+            
+            // 生成二维码
+            QRCode.toCanvas(document.getElementById('qrcodeCanvas'), registrationUrl, {
                 width: 200,
                 margin: 1,
                 color: {
@@ -603,7 +672,12 @@
                     light: '#ffffff'
                 }
             }, function(error) {
-                if (error) console.error(error);
+                if (error) {
+                    console.error('生成二维码失败:', error);
+                    // 显示错误信息给用户
+                    document.querySelector('.qr-code').innerHTML += 
+                        '<p style="color: #ff4757; margin-top: 10px;">二维码生成失败，请使用链接参与: ' + registrationUrl + '</p>';
+                }
             });
         }
         
@@ -670,6 +744,78 @@
                     alert(`已添加: ${name}`);
                 }
             }
+        }
+        
+        // 批量添加参与者
+        function addBatchParticipants() {
+            const batchText = document.getElementById('batchNames').value.trim();
+            const resultEl = document.getElementById('batchResult');
+            
+            // 清空之前的结果提示
+            resultEl.style.display = 'none';
+            
+            if (!batchText) {
+                alert('请先在文本框中粘贴或输入姓名（每行1个）！');
+                return;
+            }
+            
+            // 解析姓名列表（按换行分割，过滤空行和空格）
+            const nameList = batchText.split('\n')
+                .map(name => name.trim())
+                .filter(name => name.length >= 1);
+            
+            if (nameList.length === 0) {
+                alert('未识别到有效姓名，请检查输入格式（每行1个姓名）！');
+                return;
+            }
+            
+            // 检查重复姓名
+            const existingNames = participants.map(p => p.name);
+            const duplicateNames = [];
+            const newNames = [];
+            
+            nameList.forEach(name => {
+                if (existingNames.includes(name)) {
+                    duplicateNames.push(name);
+                } else {
+                    newNames.push(name);
+                }
+            });
+            
+            // 处理新名字
+            let addedCount = 0;
+            if (newNames.length > 0) {
+                newNames.forEach(name => {
+                    const randomPhone = '1' + Math.floor(1000000000 + Math.random() * 9000000000);
+                    const newParticipant = {
+                        id: Date.now() + Math.floor(Math.random() * 1000),
+                        name: name,
+                        phone: randomPhone,
+                        timestamp: new Date().toLocaleString()
+                    };
+                    participants.push(newParticipant);
+                    addedCount++;
+                });
+                
+                saveParticipants();
+                updateParticipantsDisplay();
+            }
+            
+            // 显示结果
+            if (addedCount > 0) {
+                resultEl.innerHTML = `
+                    <i class="fas fa-check-circle"></i> 批量导入完成！
+                    <br>成功添加：${addedCount} 个新参与者
+                    ${duplicateNames.length > 0 ? `<br>已跳过重复：${duplicateNames.length} 个（${duplicateNames.slice(0, 3).join('、')}${duplicateNames.length > 3 ? '...' : ''}）` : ''}
+                `;
+                resultEl.style.color = '#00b09b';
+            } else {
+                resultEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> 所有姓名均已存在，未添加新参与者！`;
+                resultEl.style.color = '#ff4757';
+            }
+            
+            resultEl.style.display = 'block';
+            document.getElementById('batchNames').value = '';
         }
         
         // 添加参与者
@@ -794,7 +940,7 @@
             winnerName.textContent = "等待抽奖...";
             winnerPrize.textContent = "一等奖：马尔代夫双人游";
             
-            // 重置奖品（如果需要可以重新加载所有奖品）
+            // 重置奖品
             if (prizes.length === 0) {
                 prizes = [...initialPrizes];
                 localStorage.setItem(PRIZES_KEY, JSON.stringify(prizes));
@@ -838,4 +984,3 @@
     </script>
 </body>
 </html>
-
