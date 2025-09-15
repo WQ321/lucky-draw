@@ -1,4 +1,4 @@
-<!DOCTYPE html><!DOCTYPE html>
+<!DOCTYPE html><!DOCTYPE html><!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -108,6 +108,20 @@
             gap: 8px;
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
             animation: fadeIn 0.5s ease-in;
+        }
+        
+        /* 新增：隐藏超过40名的参与者 */
+        .participant.hidden-participant {
+            display: none;
+        }
+        
+        /* 新增：显示参与者数量提示 */
+        .participants-overflow {
+            text-align: center;
+            padding: 10px;
+            color: #6c757d;
+            font-style: italic;
+            display: none;
         }
         
         @keyframes fadeIn {
@@ -532,6 +546,11 @@
                 </div>
                 
                 <div class="participants-container">
+                    <!-- 新增：显示参与者数量提示 -->
+                    <div class="participants-overflow" id="participantsOverflow">
+                        仅显示前40名参与者，还有 <span id="hiddenCount">0</span> 人未显示
+                    </div>
+                    
                     <div class="participants-list" id="participantsList">
                         <div class="participant">等待来宾参与...</div>
                     </div>
@@ -661,6 +680,7 @@
                         <li>获奖者信息将显示在大屏幕上</li>
                         <li>点击"重置抽奖"可重新开始新一轮抽奖，保留历史记录</li>
                         <li>点击"清空中奖记录"可删除所有历史中奖信息并恢复到第一轮</li>
+                        <li>大屏幕最多显示前40名参与者，超过部分隐藏但仍可参与抽奖</li>
                     </ol>
                 </div>
             </div>
@@ -705,6 +725,9 @@
         const WINNERS_RECORD_KEY = 'weddingLotteryWinnersRecord';
         const LOTTERY_ROUND_KEY = 'weddingLotteryRound';
         
+        // 最大显示参与者数量
+        const MAX_VISIBLE_PARTICIPANTS = 40;
+        
         // 初始奖品设置
         const initialPrizes = [
             "一等奖：红包200元",
@@ -740,6 +763,8 @@
         const registerUrlElement = document.getElementById('registerUrl');
         const prizesExhausted = document.getElementById('prizesExhausted');
         const winnersTableBody = document.getElementById('winnersTableBody');
+        const participantsOverflow = document.getElementById('participantsOverflow');
+        const hiddenCount = document.getElementById('hiddenCount');
         
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -989,9 +1014,20 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(participants));
         }
         
-        // 更新参与者显示
+        // 更新参与者显示（修改部分：只显示前40名）
         function updateParticipantsDisplay() {
             participantCount.textContent = participants.length;
+            
+            // 计算隐藏的参与者数量
+            const hiddenParticipantsCount = Math.max(0, participants.length - MAX_VISIBLE_PARTICIPANTS);
+            
+            // 显示或隐藏溢出提示
+            if (hiddenParticipantsCount > 0) {
+                participantsOverflow.style.display = 'block';
+                hiddenCount.textContent = hiddenParticipantsCount;
+            } else {
+                participantsOverflow.style.display = 'none';
+            }
             
             if (participants.length === 0) {
                 participantsList.innerHTML = '<div class="participant">等待来宾参与...</div>';
@@ -999,7 +1035,11 @@
             }
             
             participantsList.innerHTML = '';
-            participants.forEach(participant => {
+            
+            // 只显示前40名参与者
+            const visibleParticipants = participants.slice(0, MAX_VISIBLE_PARTICIPANTS);
+            
+            visibleParticipants.forEach(participant => {
                 const participantEl = document.createElement('div');
                 participantEl.className = 'participant';
                 participantEl.innerHTML = `<span>${participant.name}</span>`;
@@ -1095,7 +1135,7 @@
             btnStop.disabled = false;
             isLotteryRunning = true;
             
-            // 随机选择动画效果
+            // 随机选择动画效果 - 所有参与者都可以被选中，包括隐藏的
             lotteryInterval = setInterval(() => {
                 const randomIndex = Math.floor(Math.random() * participants.length);
                 const winner = participants[randomIndex];
@@ -1115,7 +1155,7 @@
             btnStop.disabled = true;
             isLotteryRunning = false;
             
-            // 确定最终获奖者
+            // 确定最终获奖者 - 可以是任何参与者，包括隐藏的
             const randomIndex = Math.floor(Math.random() * participants.length);
             const winner = participants[randomIndex];
             
@@ -1195,7 +1235,7 @@
             alert(`已开始第 ${currentRound} 轮抽奖，历史中奖记录已保留`);
         }
         
-        // 清空中奖记录功能（已修改）
+        // 清空中奖记录功能
         function clearAllWinnersRecords() {
             if (winnersRecord.length === 0) {
                 alert('当前没有中奖记录可清空');
@@ -1272,6 +1312,3 @@
     </script>
 </body>
 </html>
-
-
-
