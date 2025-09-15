@@ -1303,16 +1303,16 @@
             checkPrizesStatus();
             
             // 3秒后停止动画
-            setTimeout(() => {
-                winnerName.classList.remove('pulse');
+            // setTimeout(() => {
+            //    winnerName.classList.remove('pulse');
                 
                 // 如果本轮还有未抽取的奖品，提示继续
-                if (currentDrawingIndex < TOTAL_DRAWINGS_PER_ROUND) {
-                    alert(`已抽出${currentPrize.config.name}，请继续抽取下一个奖品`);
-                } else {
-                    alert(`第${currentRound}轮抽奖已全部完成！请点击"重置抽奖"开始下一轮`);
-                }
-            }, 3000);
+            //   if (currentDrawingIndex < TOTAL_DRAWINGS_PER_ROUND) {
+            //        alert(`已抽出${currentPrize.config.name}，请继续抽取下一个奖品`);
+            //    } else {
+            //        alert(`第${currentRound}轮抽奖已全部完成！请点击"重置抽奖"开始下一轮`);
+            //    }
+            //}, 3000);
         }
         
         // 重置抽奖（开始下一轮）
@@ -1435,3 +1435,4 @@
     </script>
 </body>
 </html>
+
