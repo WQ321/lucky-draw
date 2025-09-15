@@ -720,9 +720,7 @@
                     <h3><i class="fas fa-qrcode"></i> 扫码参与</h3>
                     <canvas id="qrcodeCanvas"></canvas>
                     <p>微信扫描二维码参与抽奖</p>
-                    <p style="font-size:0.8rem; color:#6a11cb; margin-top:10px;">
-                        注册链接: <span id="registerUrl" style="word-break:break-all;"></span>
-                    </p>
+                    <!-- 移除了链接显示 -->
                 </div>
                 
                 <div class="control-buttons">
@@ -743,15 +741,11 @@
                 
                 <div class="admin-panel">
                     <h3><i class="fas fa-cog"></i> 管理功能</h3>
-                    <div class="admin-input">
-                        <input type="text" id="participantName" placeholder="输入姓名手动添加">
-                        <button onclick="addParticipantManually()">添加</button>
-                    </div>
                     
-                    <!-- 批量添加区域 -->
+                    <!-- 批量添加区域 - 只保留这部分 -->
                     <div class="batch-add">
                         <label>
-                            <i class="fas fa-list"></i> 批量添加（每行1个姓名）
+                            <i class="fas fa-list"></i> 批量添加参与者（每行1个姓名）
                         </label>
                         <textarea 
                             id="batchNames" 
@@ -772,8 +766,7 @@
                         <div id="batchResult"></div>
                     </div>
                     
-                    <div id="nameError" class="error-message">该姓名已存在！</div>
-                    <button onclick="clearAllParticipants()" style="background: #ff4756;">
+                    <button onclick="clearAllParticipants()" style="background: #ff4756; margin-top: 10px;">
                         <i class="fas fa-trash"></i> 清空参与者
                     </button>
                 </div>
@@ -885,9 +878,7 @@
         const registrationPage = document.getElementById('registrationPage');
         const registrationForm = document.getElementById('registrationForm');
         const successMessage = document.getElementById('successMessage');
-        const nameError = document.getElementById('nameError');
         const regNameError = document.getElementById('regNameError');
-        const registerUrlElement = document.getElementById('registerUrl');
         const prizesExhausted = document.getElementById('prizesExhausted');
         const winnersTableBody = document.getElementById('winnersTableBody');
         const participantsOverflow = document.getElementById('participantsOverflow');
@@ -932,7 +923,6 @@
         
         // 隐藏错误信息
         function hideError() {
-            nameError.style.display = 'none';
             regNameError.style.display = 'none';
         }
         
@@ -950,15 +940,8 @@
           
         // 生成二维码
         function generateQRCode() {
-            // 获取当前页面基础URL
-            //let baseUrl = window.location.href.split('?')[0];
-            
             // 构建注册页面URL
-            //const registrationUrl = baseUrl + '?page=register';
             const registrationUrl = 'https://docs.qq.com/form/page/DUURpUWdpdnR1YUVN';
-            
-            // 显示注册链接
-            registerUrlElement.textContent = registrationUrl;
             
             // 生成二维码
             QRCode.toCanvas(document.getElementById('qrcodeCanvas'), registrationUrl, {
@@ -972,7 +955,7 @@
                 if (error) {
                     console.error('生成二维码失败:', error);
                     document.querySelector('.qr-code').innerHTML += 
-                        '<p style="color: #ff4757; margin-top: 10px;">二维码生成失败，请使用链接参与: ' + registrationUrl + '</p>';
+                        '<p style="color: #ff4757; margin-top: 10px;">二维码生成失败，请使用微信扫码参与</p>';
                 }
             });
         }
@@ -1018,28 +1001,6 @@
             setTimeout(() => {
                 window.close();
             }, 3000);
-        }
-        
-        // 手动添加参与者
-        function addParticipantManually() {
-            const nameInput = document.getElementById('participantName');
-            const name = nameInput.value.trim();
-            
-            if (name) {
-                // 检查姓名是否已存在
-                if (isNameExists(name)) {
-                    nameError.style.display = 'block';
-                    return;
-                }
-                
-                // 生成随机手机号
-                const phone = '1' + Math.floor(1000000000 + Math.random() * 9000000000);
-                
-                if (addParticipant(name, phone)) {
-                    nameInput.value = '';
-                    alert(`已添加: ${name}`);
-                }
-            }
         }
         
         // 批量添加参与者
@@ -1114,34 +1075,12 @@
             document.getElementById('batchNames').value = '';
         }
         
-        // 添加参与者
-        function addParticipant(name, phone = '') {
-            // 检查是否已存在
-            if (isNameExists(name)) {
-                return false;
-            }
-            
-            const participant = {
-                id: Date.now(),
-                name: name,
-                phone: phone,
-                timestamp: new Date().toLocaleString()
-            };
-            
-            participants.push(participant);
-            saveParticipants();
-            updateParticipantsDisplay();
-            
-            return true;
-        }
-        
         // 清空所有参与者
         function clearAllParticipants() {
             if (confirm('确定要清空所有参与者吗？')) {
                 participants = [];
                 saveParticipants();
                 updateParticipantsDisplay();
-                nameError.style.display = 'none';
             }
         }
         
