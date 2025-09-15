@@ -160,6 +160,7 @@
             opacity: 0.9;
         }
         
+        /* 奖品区域样式调整为两行显示 */
         .prizes {
             display: flex;
             flex-wrap: wrap;
@@ -435,7 +436,7 @@
             margin-bottom: 15px;
         }
         
-        /* 本轮完成提示框 */
+        /* 本轮完成提示框和遮罩层 */
         .round-complete-notification {
             position: fixed;
             top: 50%;
@@ -494,6 +495,11 @@
             .winners-table th, .winners-table td {
                 padding: 8px 5px;
                 font-size: 0.9rem;
+            }
+            
+            /* 移动端奖品显示调整为每行2个 */
+            .prize {
+                min-width: calc(50% - 5px);
             }
         }
         
@@ -609,7 +615,7 @@
                 
                 <!-- 当前抽奖进度提示 -->
                 <div class="drawing-progress" id="drawingProgress">
-                    <i class="fas fa-info-circle"></i> 本轮抽奖进度: <span id="progressText">一等奖 (1/6)</span>
+                    <i class="fas fa-info-circle"></i> 本轮抽奖进度: <span id="progressText">1号奖品 (1/11)</span>
                 </div>
                 
                 <div class="participants-container">
@@ -626,29 +632,59 @@
                 <div class="winner-display">
                     <h3>恭喜中奖！</h3>
                     <div class="winner-name" id="winnerName">等待抽奖...</div>
-                    <div class="winner-prize" id="winnerPrize">一等奖：红包200元</div>
+                    <div class="winner-prize" id="winnerPrize">1号奖品：10元红包</div>
                 </div>
                 
                 <div class="prizes">
                     <div class="prize" data-prize="0">
-                        <h3>一等奖</h3>
-                        <p>红包200元</p>
+                        <h3>1号奖品</h3>
+                        <p>10元红包</p>
                         <div class="remaining">剩余: <span class="remaining-count">1</span></div>
                     </div>
                     <div class="prize" data-prize="1">
-                        <h3>二等奖</h3>
-                        <p>红包100元</p>
+                        <h3>2号奖品</h3>
+                        <p>20元红包</p>
                         <div class="remaining">剩余: <span class="remaining-count">1</span></div>
                     </div>
                     <div class="prize" data-prize="2">
-                        <h3>三等奖</h3>
-                        <p>红包50元</p>
+                        <h3>3号奖品</h3>
+                        <p>30元红包</p>
                         <div class="remaining">剩余: <span class="remaining-count">1</span></div>
                     </div>
                     <div class="prize" data-prize="3">
-                        <h3>幸运奖</h3>
-                        <p>喜糖一份</p>
-                        <div class="remaining">剩余: <span class="remaining-count">3</span></div>
+                        <h3>4号奖品</h3>
+                        <p>40元红包</p>
+                        <div class="remaining">剩余: <span class="remaining-count">1</span></div>
+                    </div>
+                    <div class="prize" data-prize="4">
+                        <h3>5号奖品</h3>
+                        <p>50元红包</p>
+                        <div class="remaining">剩余: <span class="remaining-count">1</span></div>
+                    </div>
+                    <div class="prize" data-prize="5">
+                        <h3>6号奖品</h3>
+                        <p>60元红包</p>
+                        <div class="remaining">剩余: <span class="remaining-count">1</span></div>
+                    </div>
+                    <div class="prize" data-prize="6">
+                        <h3>7号奖品</h3>
+                        <p>70元红包</p>
+                        <div class="remaining">剩余: <span class="remaining-count">1</span></div>
+                    </div>
+                    <div class="prize" data-prize="7">
+                        <h3>8号奖品</h3>
+                        <p>80元红包</p>
+                        <div class="remaining">剩余: <span class="remaining-count">1</span></div>
+                    </div>
+                    <div class="prize" data-prize="8">
+                        <h3>9号奖品</h3>
+                        <p>90元红包</p>
+                        <div class="remaining">剩余: <span class="remaining-count">1</span></div>
+                    </div>
+                    <div class="prize" data-prize="9">
+                        <h3>10号奖品</h3>
+                        <p>100元红包</p>
+                        <div class="remaining">剩余: <span class="remaining-count">2</span></div>
                     </div>
                 </div>
                 
@@ -746,7 +782,7 @@
                     <h3><i class="fas fa-info-circle"></i> 使用说明</h3>
                     <ol>
                         <li>来宾使用微信扫描二维码参与抽奖</li>
-                        <li>每轮抽奖顺序：1个一等奖 → 1个二等奖 → 1个三等奖 → 3个幸运奖</li>
+                        <li>每轮抽奖顺序：1-9号奖品各1次，10号奖品2次，共11次抽奖</li>
                         <li>点击"开始抽奖"按钮开始随机选择获奖者</li>
                         <li>点击"停止抽奖"按钮确定最终获奖者</li>
                         <li>获奖者信息将显示在大屏幕上</li>
@@ -810,14 +846,21 @@
         const MAX_VISIBLE_PARTICIPANTS = 40;
         
         // 奖品设置，包含每轮抽取数量
+        // 1-9号奖品各1次，10号奖品2次
         const prizesConfig = [
-            { name: "一等奖：红包200元", count: 1 },
-            { name: "二等奖：红包100元", count: 1 },
-            { name: "三等奖：红包50元", count: 1 },
-            { name: "幸运奖：喜糖一份", count: 3 }
+            { name: "1号奖品：10元红包", count: 1 },
+            { name: "2号奖品：20元红包", count: 1 },
+            { name: "3号奖品：30元红包", count: 1 },
+            { name: "4号奖品：40元红包", count: 1 },
+            { name: "5号奖品：50元红包", count: 1 },
+            { name: "6号奖品：60元红包", count: 1 },
+            { name: "7号奖品：70元红包", count: 1 },
+            { name: "8号奖品：80元红包", count: 1 },
+            { name: "9号奖品：90元红包", count: 1 },
+            { name: "10号奖品：100元红包", count: 2 }
         ];
         
-        // 计算每轮总抽奖次数
+        // 计算每轮总抽奖次数 (1-9号各1次 + 10号2次 = 11次)
         const TOTAL_DRAWINGS_PER_ROUND = prizesConfig.reduce((total, prize) => total + prize.count, 0);
         
         // 初始化数据
