@@ -1,4 +1,4 @@
-<!DOCTYPE html><!DOCTYPE html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -84,6 +84,12 @@
             color: #6a11cb;
         }
         
+        .current-drawing {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+        
         .participants-container {
             max-height: 200px;
             overflow-y: auto;
@@ -110,12 +116,12 @@
             animation: fadeIn 0.5s ease-in;
         }
         
-        /* 新增：隐藏超过40名的参与者 */
+        /* 隐藏超过40名的参与者 */
         .participant.hidden-participant {
             display: none;
         }
         
-        /* 新增：显示参与者数量提示 */
+        /* 显示参与者参与者数量提示 */
         .participants-overflow {
             text-align: center;
             padding: 10px;
@@ -175,12 +181,17 @@
             color: #ff6b6b;
         }
         
+        .prize .remaining {
+            font-size: 0.8rem;
+            color: #495057;
+        }
+        
         .prize.claimed {
             background: #e9ecef;
             opacity: 0.7;
         }
         
-        .prize.claimed h3, .prize.claimed p {
+        .prize.claimed h3, .prize.claimed p, .prize.claimed .remaining {
             text-decoration: line-through;
             color: #6c757d;
         }
@@ -414,6 +425,16 @@
             display: none;
         }
         
+        /* 当前抽奖进度提示 */
+        .drawing-progress {
+            text-align: center;
+            padding: 15px;
+            background: #e3f2fd;
+            color: #1565c0;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
         @media (max-width: 768px) {
             .content {
                 flex-direction: column;
@@ -542,11 +563,19 @@
             <div class="screen">
                 <div class="screen-header">
                     <h2><i class="fas fa-tv"></i> 大屏幕显示</h2>
-                    <div class="participant-count">已参与: <span id="participantCount">0</span> 人</div>
+                    <div>
+                        <div class="participant-count">已参与: <span id="participantCount">0</span> 人</div>
+                        <div class="current-drawing">当前轮次: 第 <span id="currentRoundDisplay">1</span> 轮</div>
+                    </div>
+                </div>
+                
+                <!-- 当前抽奖进度提示 -->
+                <div class="drawing-progress" id="drawingProgress">
+                    <i class="fas fa-info-circle"></i> 本轮抽奖进度: <span id="progressText">一等奖 (1/6)</span>
                 </div>
                 
                 <div class="participants-container">
-                    <!-- 新增：显示参与者数量提示 -->
+                    <!-- 参与者数量提示 -->
                     <div class="participants-overflow" id="participantsOverflow">
                         仅显示前40名参与者，还有 <span id="hiddenCount">0</span> 人未显示
                     </div>
@@ -566,18 +595,22 @@
                     <div class="prize" data-prize="0">
                         <h3>一等奖</h3>
                         <p>红包200元</p>
+                        <div class="remaining">剩余: <span class="remaining-count">1</span></div>
                     </div>
                     <div class="prize" data-prize="1">
                         <h3>二等奖</h3>
                         <p>红包100元</p>
+                        <div class="remaining">剩余: <span class="remaining-count">1</span></div>
                     </div>
                     <div class="prize" data-prize="2">
                         <h3>三等奖</h3>
                         <p>红包50元</p>
+                        <div class="remaining">剩余: <span class="remaining-count">1</span></div>
                     </div>
                     <div class="prize" data-prize="3">
                         <h3>幸运奖</h3>
                         <p>喜糖一份</p>
+                        <div class="remaining">剩余: <span class="remaining-count">3</span></div>
                     </div>
                 </div>
                 
@@ -604,7 +637,7 @@
                 
                 <!-- 奖品已抽完提示 -->
                 <div class="prizes-exhausted" id="prizesExhausted">
-                    <i class="fas fa-info-circle"></i> 所有奖品已抽完！如需再次抽奖，请点击"重置抽奖"按钮
+                    <i class="fas fa-info-circle"></i> 本轮奖品已抽完！请点击"重置抽奖"开始下一轮
                 </div>
             </div>
             
@@ -675,6 +708,7 @@
                     <h3><i class="fas fa-info-circle"></i> 使用说明</h3>
                     <ol>
                         <li>来宾使用微信扫描二维码参与抽奖</li>
+                        <li>每轮抽奖顺序：1个一等奖 → 1个二等奖 → 1个三等奖 → 3个幸运奖</li>
                         <li>点击"开始抽奖"按钮开始随机选择获奖者</li>
                         <li>点击"停止抽奖"按钮确定最终获奖者</li>
                         <li>获奖者信息将显示在大屏幕上</li>
@@ -728,20 +762,23 @@
         // 最大显示参与者数量
         const MAX_VISIBLE_PARTICIPANTS = 40;
         
-        // 初始奖品设置
-        const initialPrizes = [
-            "一等奖：红包200元",
-            "二等奖：红包100元",
-            "三等奖：红包50元",
-            "幸运奖：喜糖一份"
+        // 奖品设置，包含每轮抽取数量
+        const prizesConfig = [
+            { name: "一等奖：红包200元", count: 1 },
+            { name: "二等奖：红包100元", count: 1 },
+            { name: "三等奖：红包50元", count: 1 },
+            { name: "幸运奖：喜糖一份", count: 3 }
         ];
+        
+        // 计算每轮总抽奖次数
+        const TOTAL_DRAWINGS_PER_ROUND = prizesConfig.reduce((total, prize) => total + prize.count, 0);
         
         // 初始化数据
         let participants = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let prizes = JSON.parse(localStorage.getItem(PRIZES_KEY)) || [...initialPrizes];
         let claimedPrizes = JSON.parse(localStorage.getItem(CLAIMED_PRIZES_KEY)) || [];
         let winnersRecord = JSON.parse(localStorage.getItem(WINNERS_RECORD_KEY)) || [];
         let currentRound = JSON.parse(localStorage.getItem(LOTTERY_ROUND_KEY)) || 1;
+        let currentDrawingIndex = 0; // 当前轮次中正在抽取的序号
         let lotteryInterval;
         let isLotteryRunning = false;
         
@@ -765,6 +802,9 @@
         const winnersTableBody = document.getElementById('winnersTableBody');
         const participantsOverflow = document.getElementById('participantsOverflow');
         const hiddenCount = document.getElementById('hiddenCount');
+        const currentRoundDisplay = document.getElementById('currentRoundDisplay');
+        const drawingProgress = document.getElementById('drawingProgress');
+        const progressText = document.getElementById('progressText');
         
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -781,6 +821,8 @@
                 updatePrizesDisplay();
                 checkPrizesStatus();
                 updateWinnersRecord();
+                updateRoundDisplay();
+                updateDrawingProgress();
             }
             
             // 绑定清空记录按钮事件
@@ -1014,7 +1056,7 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(participants));
         }
         
-        // 更新参与者显示（修改部分：只显示前40名）
+        // 更新参与者显示（只显示前40名）
         function updateParticipantsDisplay() {
             participantCount.textContent = participants.length;
             
@@ -1047,12 +1089,67 @@
             });
         }
         
+        // 获取当前应该抽取的奖品
+        function getCurrentPrize() {
+            let countSum = 0;
+            
+            for (let i = 0; i < prizesConfig.length; i++) {
+                countSum += prizesConfig[i].count;
+                if (currentDrawingIndex < countSum) {
+                    return {
+                        index: i,
+                        config: prizesConfig[i]
+                    };
+                }
+            }
+            
+            return null; // 所有奖品已抽取完毕
+        }
+        
+        // 更新当前抽奖进度显示
+        function updateDrawingProgress() {
+            const currentPrize = getCurrentPrize();
+            
+            if (currentPrize) {
+                // 计算当前是该奖品的第几次抽取
+                let previousCountSum = 0;
+                for (let i = 0; i < currentPrize.index; i++) {
+                    previousCountSum += prizesConfig[i].count;
+                }
+                const currentPrizeDrawIndex = currentDrawingIndex - previousCountSum + 1;
+                
+                // 更新进度文本
+                progressText.textContent = `${currentPrize.config.name} (${currentDrawingIndex + 1}/${TOTAL_DRAWINGS_PER_ROUND})`;
+            } else {
+                // 本轮抽奖已完成
+                progressText.textContent = `本轮抽奖已完成 (${TOTAL_DRAWINGS_PER_ROUND}/${TOTAL_DRAWINGS_PER_ROUND})`;
+            }
+        }
+        
+        // 更新当前轮次显示
+        function updateRoundDisplay() {
+            currentRoundDisplay.textContent = currentRound;
+        }
+        
         // 更新奖品显示状态（标记已抽取的奖品）
         function updatePrizesDisplay() {
+            // 计算每个奖品已抽取的数量
+            const prizeCounts = Array(prizesConfig.length).fill(0);
+            claimedPrizes.forEach(index => {
+                prizeCounts[index]++;
+            });
+            
+            // 更新显示
             const prizeElements = document.querySelectorAll('.prize');
             prizeElements.forEach(el => {
                 const prizeIndex = parseInt(el.dataset.prize);
-                if (claimedPrizes.includes(prizeIndex)) {
+                const remaining = prizesConfig[prizeIndex].count - prizeCounts[prizeIndex];
+                
+                // 更新剩余数量
+                el.querySelector('.remaining-count').textContent = remaining;
+                
+                // 更新状态（如果已全部抽取则标记为已抽取）
+                if (remaining <= 0) {
                     el.classList.add('claimed');
                 } else {
                     el.classList.remove('claimed');
@@ -1102,8 +1199,8 @@
         
         // 检查奖品状态并更新UI
         function checkPrizesStatus() {
-            // 检查是否所有奖品都已抽取
-            if (claimedPrizes.length >= initialPrizes.length) {
+            // 检查本轮是否已抽完所有奖品
+            if (currentDrawingIndex >= TOTAL_DRAWINGS_PER_ROUND) {
                 // 显示"奖品已抽完"提示
                 prizesExhausted.style.display = 'block';
                 // 禁用开始抽奖按钮
@@ -1126,8 +1223,8 @@
             }
             
             // 检查是否还有未抽取的奖品
-            if (claimedPrizes.length >= initialPrizes.length) {
-                alert("所有奖品已抽完！请点击重置抽奖按钮重新开始。");
+            if (currentDrawingIndex >= TOTAL_DRAWINGS_PER_ROUND) {
+                alert("本轮所有奖品已抽完！请点击重置抽奖按钮开始下一轮。");
                 return;
             }
             
@@ -1135,15 +1232,17 @@
             btnStop.disabled = false;
             isLotteryRunning = true;
             
-            // 随机选择动画效果 - 所有参与者都可以被选中，包括隐藏的
+            // 获取当前应抽取的奖品
+            const currentPrize = getCurrentPrize();
+            if (!currentPrize) return;
+            
+            // 随机选择动画效果 - 所有参与者都可以被选中
             lotteryInterval = setInterval(() => {
                 const randomIndex = Math.floor(Math.random() * participants.length);
                 const winner = participants[randomIndex];
                 
-                // 显示当前待抽取的奖品
-                const availablePrizes = initialPrizes.filter((_, index) => !claimedPrizes.includes(index));
                 winnerName.textContent = winner.name;
-                winnerPrize.textContent = availablePrizes[0];
+                winnerPrize.textContent = currentPrize.config.name;
             }, 100);
         }
         
@@ -1155,24 +1254,23 @@
             btnStop.disabled = true;
             isLotteryRunning = false;
             
-            // 确定最终获奖者 - 可以是任何参与者，包括隐藏的
+            // 获取当前应抽取的奖品
+            const currentPrize = getCurrentPrize();
+            if (!currentPrize) return;
+            
+            // 确定最终获奖者
             const randomIndex = Math.floor(Math.random() * participants.length);
             const winner = participants[randomIndex];
             
-            // 获取当前可抽取的奖品
-            const availablePrizes = initialPrizes.filter((_, index) => !claimedPrizes.includes(index));
-            const currentPrize = availablePrizes[0];
-            const currentPrizeIndex = initialPrizes.indexOf(currentPrize);
-            
             // 记录已抽取的奖品
-            claimedPrizes.push(currentPrizeIndex);
+            claimedPrizes.push(currentPrize.index);
             localStorage.setItem(CLAIMED_PRIZES_KEY, JSON.stringify(claimedPrizes));
             
             // 记录中奖信息，包含当前轮次
             const winnerInfo = {
                 id: Date.now(),
                 name: winner.name,
-                prize: currentPrize,
+                prize: currentPrize.config.name,
                 time: new Date().toLocaleString(),
                 round: currentRound
             };
@@ -1181,7 +1279,7 @@
             
             // 更新显示
             winnerName.textContent = winner.name;
-            winnerPrize.textContent = currentPrize;
+            winnerPrize.textContent = currentPrize.config.name;
             
             // 添加动画效果
             winnerName.classList.add('pulse');
@@ -1189,11 +1287,17 @@
             // 创建彩花效果
             createConfetti();
             
+            // 增加当前抽奖索引
+            currentDrawingIndex++;
+            
             // 更新奖品显示状态
             updatePrizesDisplay();
             
             // 更新中奖记录显示
             updateWinnersRecord();
+            
+            // 更新抽奖进度
+            updateDrawingProgress();
             
             // 检查奖品状态
             checkPrizesStatus();
@@ -1201,30 +1305,43 @@
             // 3秒后停止动画
             setTimeout(() => {
                 winnerName.classList.remove('pulse');
+                
+                // 如果本轮还有未抽取的奖品，提示继续
+                if (currentDrawingIndex < TOTAL_DRAWINGS_PER_ROUND) {
+                    alert(`已抽出${currentPrize.config.name}，请继续抽取下一个奖品`);
+                } else {
+                    alert(`第${currentRound}轮抽奖已全部完成！请点击"重置抽奖"开始下一轮`);
+                }
             }, 3000);
         }
         
-        // 重置抽奖
+        // 重置抽奖（开始下一轮）
         function resetLottery() {
             clearInterval(lotteryInterval);
             isLotteryRunning = false;
             
-            // 重置奖品状态，但保留中奖记录
+            // 重置本轮奖品状态，但保留中奖记录
             claimedPrizes = [];
-            localStorage.setItem(CLAIMED_PRIZES_KEY, JSON.stringify(claimedPrizes));
+            currentDrawingIndex = 0;
             
             // 增加轮次计数
             currentRound++;
             localStorage.setItem(LOTTERY_ROUND_KEY, JSON.stringify(currentRound));
+            localStorage.setItem(CLAIMED_PRIZES_KEY, JSON.stringify(claimedPrizes));
             
             // 更新显示
             winnerName.textContent = "等待抽奖...";
-            winnerPrize.textContent = "一等奖：红包200元";
             
-            // 更新奖品显示
+            // 获取第一轮第一个奖品
+            const firstPrize = getCurrentPrize();
+            if (firstPrize) {
+                winnerPrize.textContent = firstPrize.config.name;
+            }
+            
+            // 更新显示
             updatePrizesDisplay();
-            
-            // 检查奖品状态
+            updateRoundDisplay();
+            updateDrawingProgress();
             checkPrizesStatus();
             
             // 重置按钮状态
@@ -1232,7 +1349,7 @@
             btnStop.disabled = true;
             
             // 显示提示
-            alert(`已开始第 ${currentRound} 轮抽奖，历史中奖记录已保留`);
+            alert(`已开始第 ${currentRound} 轮抽奖`);
         }
         
         // 清空中奖记录功能
@@ -1248,6 +1365,7 @@
                 
                 // 2. 重置轮次为1
                 currentRound = 1;
+                currentDrawingIndex = 0;
                 
                 // 3. 重置奖品状态，使其可再次抽取
                 claimedPrizes = [];
@@ -1259,11 +1377,16 @@
                 
                 // 5. 更新显示
                 winnerName.textContent = "等待抽奖...";
-                winnerPrize.textContent = "一等奖：红包200元";
+                const firstPrize = getCurrentPrize();
+                if (firstPrize) {
+                    winnerPrize.textContent = firstPrize.config.name;
+                }
                 
                 // 6. 更新UI显示
                 updateWinnersRecord();
                 updatePrizesDisplay();
+                updateRoundDisplay();
+                updateDrawingProgress();
                 checkPrizesStatus();
                 
                 // 7. 重置按钮状态
