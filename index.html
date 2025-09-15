@@ -654,8 +654,8 @@
         // 生成二维码 - 修复版：确保正确指向注册页面
         function generateQRCode() {
             // 获取当前页面基础URL（不含参数）
-            //let baseUrl = window.location.href.split('?')[0];
-          let baseUrl = "https://wq321.github.io/lucky-draw/";
+            let baseUrl = window.location.href.split('?')[0];
+            // let baseUrl = "https://wq321.github.io/lucky-draw/";
             
             // 构建注册页面URL
             const registrationUrl = baseUrl + '?page=register';
@@ -984,3 +984,4 @@
     </script>
 </body>
 </html>
+
