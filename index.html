@@ -435,6 +435,44 @@
             margin-bottom: 15px;
         }
         
+        /* 本轮完成提示框 */
+        .round-complete-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            z-index: 1000;
+            max-width: 90%;
+            display: none;
+        }
+        
+        .round-complete-notification h3 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .round-complete-notification p {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+        
         @media (max-width: 768px) {
             .content {
                 flex-direction: column;
@@ -724,6 +762,16 @@
             <p>© 2025 幸福婚礼策划 - 抽奖系统 | <span id="currentTime"></span></p>
         </footer>
     </div>
+    
+    <!-- 本轮完成提示框和遮罩层 -->
+    <div class="overlay" id="overlay"></div>
+    <div class="round-complete-notification" id="roundCompleteNotification">
+        <h3><i class="fas fa-trophy"></i> 本轮抽奖已完成！</h3>
+        <p>第 <span id="completedRoundNumber">1</span> 轮所有奖项已全部抽出</p>
+        <button onclick="closeRoundCompleteNotification()">
+            <i class="fas fa-redo"></i> 点击"重置抽奖"开始下一轮
+        </button>
+    </div>
 
     <!-- 注册页面 -->
     <div id="registrationPage" class="registration-page hidden">
@@ -754,7 +802,6 @@
     <script>
         // 使用localStorage模拟数据库存储
         const STORAGE_KEY = 'weddingLotteryParticipants';
-        const PRIZES_KEY = 'weddingLotteryPrizes';
         const CLAIMED_PRIZES_KEY = 'weddingLotteryClaimedPrizes';
         const WINNERS_RECORD_KEY = 'weddingLotteryWinnersRecord';
         const LOTTERY_ROUND_KEY = 'weddingLotteryRound';
@@ -766,7 +813,7 @@
         const prizesConfig = [
             { name: "一等奖：红包200元", count: 1 },
             { name: "二等奖：红包100元", count: 1 },
-            { name: "三等奖：红包50元", count: 2 },
+            { name: "三等奖：红包50元", count: 1 },
             { name: "幸运奖：喜糖一份", count: 3 }
         ];
         
@@ -805,6 +852,9 @@
         const currentRoundDisplay = document.getElementById('currentRoundDisplay');
         const drawingProgress = document.getElementById('drawingProgress');
         const progressText = document.getElementById('progressText');
+        const roundCompleteNotification = document.getElementById('roundCompleteNotification');
+        const completedRoundNumber = document.getElementById('completedRoundNumber');
+        const overlay = document.getElementById('overlay');
         
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -1215,6 +1265,19 @@
             }
         }
         
+        // 显示本轮完成提示
+        function showRoundCompleteNotification() {
+            completedRoundNumber.textContent = currentRound;
+            overlay.style.display = 'block';
+            roundCompleteNotification.style.display = 'block';
+        }
+        
+        // 关闭本轮完成提示
+        function closeRoundCompleteNotification() {
+            overlay.style.display = 'none';
+            roundCompleteNotification.style.display = 'none';
+        }
+        
         // 开始抽奖
         function startLottery() {
             if (participants.length === 0) {
@@ -1302,12 +1365,27 @@
             // 检查奖品状态
             checkPrizesStatus();
             
+            // 3秒后停止动画
+            setTimeout(() => {
+                winnerName.classList.remove('pulse');
+                
+                // 只有当本轮所有奖项抽取完毕后，才显示提示
+                if (currentDrawingIndex >= TOTAL_DRAWINGS_PER_ROUND) {
+                    showRoundCompleteNotification();
+                } else {
+                    // 自动启用开始按钮，方便继续抽奖
+                    btnStart.disabled = false;
+                }
+            }, 3000);
         }
         
         // 重置抽奖（开始下一轮）
         function resetLottery() {
             clearInterval(lotteryInterval);
             isLotteryRunning = false;
+            
+            // 关闭可能显示的提示框
+            closeRoundCompleteNotification();
             
             // 重置本轮奖品状态，但保留中奖记录
             claimedPrizes = [];
@@ -1336,9 +1414,6 @@
             // 重置按钮状态
             btnStart.disabled = false;
             btnStop.disabled = true;
-            
-            // 显示提示
-            alert(`已开始第 ${currentRound} 轮抽奖`);
         }
         
         // 清空中奖记录功能
@@ -1382,8 +1457,8 @@
                 btnStart.disabled = false;
                 btnStop.disabled = true;
                 
-                // 8. 显示确认信息
-                alert('所有中奖记录已清空，已恢复到第一轮抽奖，可以直接开始抽奖');
+                // 8. 关闭可能显示的提示框
+                closeRoundCompleteNotification();
             }
         }
         
@@ -1424,5 +1499,3 @@
     </script>
 </body>
 </html>
-
-
